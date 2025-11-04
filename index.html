@@ -11,50 +11,21 @@
         body {
             font-family: "Inter", sans-serif;
         }
-        /* Custom styles for the new guess boxes - (Replaced @apply with standard CSS) */
+        /* Custom styles for the new guess boxes */
         .letter-box {
-            width: 3rem; /* 48px */
-            height: 3rem; /* 48px */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            font-size: 1.5rem; /* 24px */
-            line-height: 2rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            border-width: 2px;
-            border-radius: 0.375rem; /* 6px */
-            --tw-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-            box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
-            cursor: pointer;
-            transition-property: all;
-            transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-            transition-duration: 150ms;
-        }
-        @media (min-width: 640px) {
-            .letter-box {
-                width: 3.5rem; /* 56px */
-                height: 3.5rem; /* 56px */
-            }
+            @apply w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center text-center text-2xl font-bold uppercase border-2 rounded-md shadow-sm cursor-pointer transition-all duration-150;
         }
         /* State 0: Gray */
         .state-gray {
-            border-color: #9CA3AF; /* gray-400 */
-            background-color: #F3F4F6; /* gray-100 */
-            color: #374151; /* gray-700 */
+            @apply border-gray-400 bg-gray-100 text-gray-700;
         }
         /* State 1: Yellow */
         .state-yellow {
-            border-color: #F59E0B; /* yellow-500 */
-            background-color: #FEF3C7; /* yellow-100 */
-            color: #B45309; /* yellow-700 */
+            @apply border-yellow-500 bg-yellow-100 text-yellow-700;
         }
         /* State 2: Green */
         .state-green {
-            border-color: #10B981; /* green-500 */
-            background-color: #D1FAE5; /* green-100 */
-            color: #047857; /* green-700 */
+            @apply border-green-500 bg-green-100 text-green-700;
         }
     </style>
 </head>
@@ -65,16 +36,28 @@
         <header class="text-center mb-6">
             <h1 class="text-3xl sm:text-4xl font-bold text-gray-800">Wordle Helper</h1>
             <p class="text-gray-600 mt-2">Enter your guesses below to filter the word list.</p>
-            <!-- New status line for word list loading -->
-            <p id="listStatus" class="text-lg text-gray-500 mt-4 text-center">Loading word list...</p>
         </header>
         
         <main>
-            <!-- Word List section removed -->
-            
-            <!-- Step 1: Enter Guesses (Renumbered) -->
+            <!-- Step 1: Paste Word List -->
             <div class="mb-6">
-                <label for="guessInput" class="block text-lg font-semibold text-gray-700 mb-2">1. Enter Your Guesses</label>
+                <div class="flex justify-between items-center mb-2">
+                    <label for="wordList" class="block text-lg font-semibold text-gray-700">1. Your 5-Letter Word List</label>
+                    <button id="saveListButton" class="text-sm bg-blue-500 hover:bg-blue-600 text-white font-semibold py-1 px-3 rounded-lg shadow-sm transition-all duration-200">
+                        Save List
+                    </button>
+                </div>
+                <textarea id="wordList" rows="8" class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="paste
+your
+word
+list
+here..."></textarea>
+                <p id="listStatus" class="text-sm text-gray-500 mt-2">Paste your list and click 'Save List' to remember it.</p>
+            </div>
+            
+            <!-- Step 2: Enter Guesses -->
+            <div class="mb-6">
+                <label for="guessInput" class="block text-lg font-semibold text-gray-700 mb-2">2. Enter Your Guesses</label>
                 <div class="flex gap-2 mb-4">
                     <input type="text" id="guessInput" maxlength="5" class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 uppercase tracking-widest text-lg" placeholder="Type guess...">
                     <button id="submitGuessButton" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-5 rounded-lg shadow-md transition-all duration-200">
@@ -83,7 +66,16 @@
                 </div>
                 <!-- Guess history will be built here -->
                 <div id="guessHistoryContainer" class="space-y-2">
-                    <!-- Guesses are dynamically added here -->
+                    <!-- Example Row (JS will create this) -->
+                    <!-- 
+                    <div class="flex justify-center gap-2 guess-row">
+                        <div class="letter-box state-gray" data-letter="A" data-state="0">A</div>
+                        <div class="letter-box state-gray" data-letter="R" data-state="0">R</div>
+                        <div class="letter-box state-gray" data-letter="I" data-state="0">I</div>
+                        <div class="letter-box state-gray" data-letter="S" data-state="0">S</div>
+                        <div class="letter-box state-gray" data-letter="E" data-state="0">E</div>
+                    </div> 
+                    -->
                 </div>
             </div>
             
@@ -100,10 +92,10 @@
                 </button>
             </div>
             
-            <!-- Results Section (Renumbered) -->
+            <!-- Results Section -->
             <div class="mb-6">
                 <h2 class="text-xl font-semibold text-gray-800 mb-3">
-                    2. Results (<span id="resultCount">0</span>)
+                    Results (<span id="resultCount">0</span>)
                 </h2>
                 <div id="results" class="h-64 p-4 bg-gray-100 border border-gray-200 rounded-lg overflow-y-auto text-gray-700 font-mono">
                     <!-- Results will be populated here -->
@@ -134,10 +126,9 @@
         const resultCount = document.getElementById('resultCount');
         const bestGuessDiv = document.getElementById('bestGuess');
         
-        // New reference for the list status
+        const wordListTextArea = document.getElementById('wordList');
+        const saveListButton = document.getElementById('saveListButton');
         const listStatus = document.getElementById('listStatus');
-        
-        // Removed: wordListTextArea, saveListButton
         
         const guessInput = document.getElementById('guessInput');
         const submitGuessButton = document.getElementById('submitGuessButton');
@@ -145,40 +136,41 @@
 
         // --- Core Functions ---
 
-        // Removed: parseWordList() function
+        /**
+         * Parses the text from the word list textarea into the global allWords array.
+         */
+        function parseWordList() {
+            const wordListText = wordListTextArea.value.toLowerCase();
+            allWords = wordListText.split(/\s+/).filter(w => w.length === 5);
+        }
 
         /**
-         * On page load, fetch and load the word list from 'Words.txt'.
+         * On page load, try to find and load a saved word list from localStorage.
          */
-        window.addEventListener('load', async () => {
-            try {
-                // Fetch the word list from the same repository
-                const response = await fetch('Words.txt');
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                
-                const wordListText = await response.text();
-                allWords = wordListText.toLowerCase().split(/\s+/).filter(w => w.length === 5);
-                
-                if (allWords.length > 0) {
-                    listStatus.textContent = `Word list loaded (${allWords.length} words). Ready!`;
-                    listStatus.classList.remove('text-gray-500');
-                    listStatus.classList.add('text-green-600');
-                } else {
-                    throw new Error("Word list loaded but contains no 5-letter words.");
-                }
-                
-            } catch (error) {
-                console.error('Failed to load word list:', error);
-                listStatus.textContent = 'Error: Could not load Words.txt. Make sure it is in the same repository.';
-                listStatus.classList.remove('text-gray-500');
-                listStatus.classList.add('text-red-600');
+        window.addEventListener('load', () => {
+            const savedList = localStorage.getItem('wordleHelperList');
+            if (savedList) {
+                wordListTextArea.value = savedList;
+                parseWordList();
+                listStatus.textContent = `Loaded saved list (${allWords.length} words).`;
             }
         });
 
-        // Removed: saveListButton.addEventListener('click', ...)
+        /**
+         * Save the current word list text to localStorage.
+         */
+        saveListButton.addEventListener('click', () => {
+            const wordListText = wordListTextArea.value;
+            if (wordListText.length > 0) {
+                localStorage.setItem('wordleHelperList', wordListText);
+                parseWordList(); // Re-parse the list
+                listStatus.textContent = `List saved! (${allWords.length} words).`;
+            } else {
+                localStorage.removeItem('wordleHelperList');
+                allWords = [];
+                listStatus.textContent = 'List cleared and removed from memory.';
+            }
+        });
 
         /**
          * Handles submitting a new guess word.
@@ -233,10 +225,13 @@
         filterButton.addEventListener('click', () => {
             // Check if word list is empty
             if (allWords.length === 0) {
-                resultsDiv.textContent = 'Word list is not loaded. Please make sure Words.txt is in the repository.';
-                resultCount.textContent = '0';
-                bestGuessDiv.textContent = '---';
-                return;
+                parseWordList(); // Try one last parse, just in case
+                if (allWords.length === 0) {
+                    resultsDiv.textContent = 'Please paste a word list and click "Save List".';
+                    resultCount.textContent = '0';
+                    bestGuessDiv.textContent = '---';
+                    return;
+                }
             }
             
             // 1. Build clues from guess history
@@ -384,7 +379,6 @@
 
                 // Calculate score based on letter frequency
                 uniqueLettersInGuess.forEach(letter => {
-                    // Only count letters that we haven't already found (green)
                     if (!allGreenLetters.has(letter)) {
                         score += letterFrequency[letter] || 0;
                     }
