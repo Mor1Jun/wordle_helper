@@ -111,252 +111,97 @@
             </div>
 
             <!-- Best Guess Section -->
-            <div>
-                <h3 class="text-xl font-semibold text-gray-800 mb-3">Best Next Guess</h3>
-                <div id="bestGuess" class="p-4 bg-blue-100 border border-blue-300 rounded-lg text-blue-800 font-mono text-2xl text-center uppercase tracking-widest">
-                    ---
+            <div class="space-y-6">
+                <!-- Box 1: Best Guess for Elimination (Old Logic) -->
+                <div>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-3">Best Guess (for Elimination)</h3>
+                    <div id="bestGuessElimination" class="p-4 bg-blue-100 border border-blue-300 rounded-lg text-blue-800 font-mono text-2xl text-center uppercase tracking-widest">
+                        ---
+                    </div>
+                    <p class="text-sm text-gray-500 mt-2 text-center">This word is chosen to eliminate the most possibilities.</p>
                 </div>
-                <p class="text-sm text-gray-500 mt-2 text-center">This word is chosen to eliminate the most possibilities.</p>
+
+                <!-- Box 2: Best Guess for Winning (New Logic) -->
+                <div>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-3">Best Guess (Potential Answer)</h3>
+                    <div id="bestGuessWinner" class="p-4 bg-green-100 border border-green-300 rounded-lg text-green-800 font-mono text-2xl text-center uppercase tracking-widest">
+                        ---
+                    </div>
+                    <p class="text-sm text-gray-500 mt-2 text-center">This word is the most likely answer from the results list.</p>
+                </div>
             </div>
         </main>
     </div>
 
     <script>
-        // --- Global Variables ---
-        let allWords = [];
-        const colorStates = ['state-gray', 'state-yellow', 'state-green'];
-
-        // --- Element References ---
-        const filterButton = document.getElementById('filterButton');
+// ... existing code ... -->
         const clearAllButton = document.getElementById('clearAllButton');
         const undoButton = document.getElementById('undoButton');
         const resultsDiv = document.getElementById('results');
         const resultCount = document.getElementById('resultCount');
-        const bestGuessDiv = document.getElementById('bestGuess');
+        // Renamed and added new element
+        const bestGuessEliminationDiv = document.getElementById('bestGuessElimination');
+        const bestGuessWinnerDiv = document.getElementById('bestGuessWinner');
         
         // New reference for the list status
-        const listStatus = document.getElementById('listStatus');
-        
-        // Removed: wordListTextArea, saveListButton
-        
+// ... existing code ... -->
         const guessInput = document.getElementById('guessInput');
         const submitGuessButton = document.getElementById('submitGuessButton');
         const guessHistoryContainer = document.getElementById('guessHistoryContainer');
 
-        // --- Core Functions ---
-
-        // Removed: parseWordList() function
-
-        /**
-         * On page load, fetch and load the word list from 'Words.txt'.
-         */
-        window.addEventListener('load', async () => {
-            try {
-                // Fetch the word list from the same repository
-                const response = await fetch('Words.txt');
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                
-                const wordListText = await response.text();
-                allWords = wordListText.toLowerCase().split(/\s+/).filter(w => w.length === 5);
-                
-                if (allWords.length > 0) {
-                    listStatus.textContent = `Word list loaded (${allWords.length} words). Ready!`;
-                    listStatus.classList.remove('text-gray-500');
-                    listStatus.classList.add('text-green-600');
-                } else {
-                    throw new Error("Word list loaded but contains no 5-letter words.");
-                }
-                
-            } catch (error) {
-                console.error('Failed to load word list:', error);
-                listStatus.textContent = 'Error: Could not load Words.txt. Make sure it is in the same repository.';
-                listStatus.classList.remove('text-gray-500');
-                listStatus.classList.add('text-red-600');
-            }
-        });
-
-        // Removed: saveListButton.addEventListener('click', ...)
-
-        /**
-         * Handles submitting a new guess word.
-         */
-        function submitGuess() {
-            const word = guessInput.value.toLowerCase();
-            if (word.length !== 5) {
-                // You could add a visual error here
-                return;
-            }
-
-            // Create the new guess row
-            const guessRow = document.createElement('div');
-            guessRow.className = 'flex justify-center gap-2 guess-row';
-            
-            word.split('').forEach((letter) => {
-                const letterBox = document.createElement('div');
-                letterBox.className = 'letter-box state-gray';
-                letterBox.textContent = letter.toUpperCase();
-                letterBox.dataset.letter = letter;
-                letterBox.dataset.state = '0'; // 0=gray, 1=yellow, 2=green
-                
-                // Add click listener to cycle colors
-                letterBox.addEventListener('click', () => {
-                    let currentState = parseInt(letterBox.dataset.state);
-                    let nextState = (currentState + 1) % 3;
-                    letterBox.dataset.state = nextState;
-                    
-                    letterBox.classList.remove(colorStates[currentState]);
-                    letterBox.classList.add(colorStates[nextState]);
-                });
-                
-                guessRow.appendChild(letterBox);
-            });
-            
-            guessHistoryContainer.appendChild(guessRow);
-            guessInput.value = ''; // Clear input
-            guessInput.focus();
-        }
-
-        submitGuessButton.addEventListener('click', submitGuess);
-        guessInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                submitGuess();
-            }
-        });
-
-
-        /**
-         * Main filter logic. Reads from the guess history.
-         */
-        filterButton.addEventListener('click', () => {
+// ... existing code ... -->
             // Check if word list is empty
             if (allWords.length === 0) {
                 resultsDiv.textContent = 'Word list is not loaded. Please make sure Words.txt is in the repository.';
                 resultCount.textContent = '0';
-                bestGuessDiv.textContent = '---';
+                bestGuessEliminationDiv.textContent = '---';
+                bestGuessWinnerDiv.textContent = '---';
                 return;
             }
             
-            // 1. Build clues from guess history
-            let greens = ['', '', '', '', ''];
-            let yellows = ['', '', '', '', ''];
-            let accumulatedGrays = new Set();
-            const allYellowLetters = new Set();
-            const allGreenLetters = new Set();
-
-            const guessRows = guessHistoryContainer.querySelectorAll('.guess-row');
-            
-            guessRows.forEach(row => {
-                const letterBoxes = row.querySelectorAll('.letter-box');
-                letterBoxes.forEach((box, i) => {
-                    const letter = box.dataset.letter;
-                    const state = parseInt(box.dataset.state);
-
-                    switch(state) {
-                        case 0: // Gray
-                            accumulatedGrays.add(letter);
-                            break;
-                        case 1: // Yellow
-                            yellows[i] += letter;
-                            allYellowLetters.add(letter);
-                            break;
-                        case 2: // Green
-                            greens[i] = letter;
-                            allGreenLetters.add(letter);
-                            break;
-                    }
-                });
-            });
-            
-            const grays = Array.from(accumulatedGrays).join('');
-
-            // --- Start Filtering ---
-            const possibleWords = allWords.filter(word => {
-                
-                // --- Green Check ---
-                for (let i = 0; i < 5; i++) {
-                    if (greens[i] && word[i] !== greens[i]) {
-                        return false;
-                    }
-                }
-                
-                // --- Gray Check ---
-                for (const grayChar of grays) {
-                    if (!allGreenLetters.has(grayChar) && !allYellowLetters.has(grayChar) && word.includes(grayChar)) {
-                        return false;
-                    }
-                }
-                
-                // --- Yellow Check 1: Must contain all ---
-                for (const yellowChar of allYellowLetters) {
-                    if (!word.includes(yellowChar)) {
-                        return false;
-                    }
-                }
-                
-                // --- Yellow Check 2: Wrong position ---
-                for (let i = 0; i < 5; i++) {
-                    if (yellows[i]) {
-                        for (const yellowChar of yellows[i]) {
-                           if (word[i] === yellowChar) {
-                               return false;
-                           }
-                        }
-                    }
-                }
-                
-                return true; // Word passes all checks
-            });
-            
-            // --- Display Results ---
-            resultCount.textContent = possibleWords.length;
-            
-            if (possibleWords.length > 0) {
-                resultsDiv.innerHTML = possibleWords.join('<br>');
+// ... existing code ... -->
             } else {
                 resultsDiv.textContent = 'No matching words found.';
             }
 
-            // --- Find Best Guess ---
-            findBestGuess(allWords, possibleWords, allGreenLetters, allYellowLetters, grays);
+            // --- Find Best Guesses (Plural) ---
+            findBestGuesses(allWords, possibleWords, allGreenLetters, allYellowLetters, grays);
         });
 
         /**
-         * Clears all guess history and results.
-         */
+// ... existing code ... -->
         clearAllButton.addEventListener('click', () => {
             guessHistoryContainer.innerHTML = '';
             resultsDiv.innerHTML = '';
             resultCount.textContent = '0';
-            bestGuessDiv.textContent = '---';
+            bestGuessEliminationDiv.textContent = '---';
+            bestGuessWinnerDiv.textContent = '---';
             guessInput.focus();
         });
 
-        /**
-         * Removes the last guess row.
-         */
-        undoButton.addEventListener('click', () => {
-            const lastGuess = guessHistoryContainer.lastElementChild;
-            if (lastGuess) {
-                guessHistoryContainer.removeChild(lastGuess);
-                // Optional: Automatically re-run filter
-                // filterButton.click(); 
-            }
+// ... existing code ... -->
         });
 
         /**
-         * Finds the best next guess. (Unchanged logic)
+         * Finds the best next guess. (Renamed to "findBestGuesses")
+         * This now calls two separate functions for the two strategies.
          */
-        function findBestGuess(allWords, possibleWords, allGreenLetters, allYellowLetters, grays) {
-            // Don't calculate if there are no words or only one word left
-            if (possibleWords.length <= 1) {
-                bestGuessDiv.textContent = (possibleWords.length === 1) ? possibleWords[0] : '---';
+        function findBestGuesses(allWords, possibleWords, allGreenLetters, allYellowLetters, grays) {
+            // Don't calculate if there are no words
+            if (possibleWords.length === 0) {
+                bestGuessEliminationDiv.textContent = '---';
+                bestGuessWinnerDiv.textContent = '---';
                 return;
             }
 
-            // 1. Calculate letter frequencies from the remaining *possible* words
+            // If only one word left, it's the answer
+            if (possibleWords.length === 1) {
+                bestGuessEliminationDiv.textContent = possibleWords[0];
+                bestGuessWinnerDiv.textContent = possibleWords[0];
+                return;
+            }
+
+            // --- 1. Calculate letter frequencies from the remaining *possible* words ---
             const letterFrequency = {};
             possibleWords.forEach(word => {
                 const uniqueLetters = new Set(word.split(''));
@@ -365,7 +210,16 @@
                 });
             });
 
-            // 2. Score every word in the *entire* word list
+            // --- 2. Call the two different strategies ---
+            findBestEliminator(allWords, letterFrequency, allGreenLetters, allYellowLetters, grays);
+            findBestWinner(possibleWords, letterFrequency);
+        }
+
+        /**
+         * Strategy 1: Find the best word from the *ENTIRE* list to eliminate possibilities.
+         * (This is the old logic)
+         */
+        function findBestEliminator(allWords, letterFrequency, allGreenLetters, allYellowLetters, grays) {
             let bestGuess = { word: '', score: -1 };
 
             allWords.forEach(guessWord => {
@@ -395,7 +249,32 @@
                 }
             });
 
-            bestGuessDiv.textContent = bestGuess.word;
+            bestGuessEliminationDiv.textContent = bestGuess.word;
+        }
+
+        /**
+         * Strategy 2: Find the "best" word from only the *POSSIBLE* answers.
+         * (This is the new logic you wanted)
+         */
+        function findBestWinner(possibleWords, letterFrequency) {
+            let bestGuess = { word: '', score: -1 };
+
+            // Only score words from the remaining possibilities
+            possibleWords.forEach(guessWord => {
+                let score = 0;
+                const uniqueLettersInGuess = new Set(guessWord.split(''));
+
+                // Calculate score based on frequency *within the possible list*
+                uniqueLettersInGuess.forEach(letter => {
+                    score += letterFrequency[letter] || 0;
+                });
+
+                if (score > bestGuess.score) {
+                    bestGuess = { word: guessWord, score: score };
+                }
+            });
+
+            bestGuessWinnerDiv.textContent = bestGuess.word;
         }
     </script>
 </body>
